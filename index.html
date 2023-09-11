@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Sensory Abstract 4 - relaxing digital art effects</title>
+<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+ <link href="css/index.css" rel="stylesheet"/>
+<script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="main.js"></script>
+<script id="shader-1-fs" type="f">
+   // http://glslsandbox.com/e#38802.0
+precision highp float;
+uniform vec2 resolution;
+uniform vec2 mouse;
+uniform float time;
+uniform float Param1;
+uniform float Param2;
+uniform float Param3;
+uniform float Param4;
+
+const float fRadius = 0.008;
+const float ySpeed = 1.25;
+const float bubblePopHeight = 1.0;
+const float bubbleSpreadDist = 2.0;
+vec3 bokeh()
+{
+	vec2 uv = -1. + 2.0*gl_FragCoord.xy / resolution.xy;
+    uv.x *=  resolution.x / resolution.y;
+    
+    vec3 color = vec3(0.0);
+
+        // bubbles
+    for( int i=0; i<20; i++ )
+    {
+            // bubble seeds
+        float pha = tan(float(i)*6.+1.0)*0.5 + 0.5;
+        float siz = pow( cos(float(i)*2.4+4.0) * 0.5 + ySpeed, 4.0 );
+        float pox = cos(float(i)*2.55+3.1) * resolution.x / resolution.y;
+        
+            // buble size, position and color
+        float rad = fRadius + sin(float(i))*0.12+0.29;
+        vec2  pos = vec2( pox+sin(time/50.+pha+siz), -abs(bubblePopHeight)-rad + (bubbleSpreadDist+2.0*rad)
+                         *mod(pha+0.1*(time/5.)*(0.2+0.8*siz),1.0)) * vec2(1.0, 1.0);
+        float dis = length( uv - pos );
+        vec3  col = mix( vec3(0.2, 0.5, 0.1), vec3(0.2,0.3,0.6), 0.2+0.2*sin(float(i)*sin(time*pox*0.03)+1.9));
+        
+            // render
+        color += col.xyz *(1.- smoothstep( rad*(0.65+0.20*sin(pox*time)), rad, dis )) * (1.0 - cos(pox*time));
+    }
+	return color;
+}
+
+vec3 trippy()
+{
+	vec2 uv = (gl_FragCoord.xy / resolution.xy);
+	
+	vec2 r  = resolution.xy/32.;
+	float t = time/4.;
+	
+	float c = fract( sin(uv.x * r.x*0.8) *
+			 sin(uv.y * r.y*0.08 ) + t ); 
+	
+	uv.x += (uv.x+uv.y) +  c;
+	 
+	
+	
+	return vec3(c, c*mod(t+uv.x,1.5), 0.5 )/4.;
+}
+
+vec3 col3 ()
+{
+	vec2 u = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y) ;
+	float speed = 1.1;
+	vec2 o = vec2(sin(length(u) - time * speed), cos(length(u) - time * speed));
+	vec2 ux = u + vec2(1.5, 4.5);
+	vec2 d = vec2(sin(length(ux) - time * speed), cos(length(ux) - time * speed));
+	vec2 uy = u + vec2(-1.5, -0.5);
+	vec2 l = vec2(sin(length(uy) - time * speed), cos(length(uy) - time * speed));
+	
+	vec2 c =  o * d * l + vec2(0.4, 0.8);
+	float cx = o.y * d.y + l.y + 0.4;
+
+	return vec3( c, 1.0 )/3.;
+}
+
+vec3 matrix()
+{
+	vec2 uv = ( gl_FragCoord.xy / resolution.xy );
+	//uv.x *= resolution.x/resolution.y;
+	
+	vec3 finalColor = vec3( 0.0, 0.0, 0.0 );
+	
+	float g = -mod( gl_FragCoord.y + time, sin( gl_FragCoord.x/4. ) + 0.004 );
+	g = g + clamp(uv.y, -1.0, 0.0);	
+	
+	finalColor = vec3( 0.0, g, 0.0 );
+	
+	return finalColor;
+
+}
+
+vec2 rot(vec2 p, float a)
+{
+float sa = sin(a), ca = cos(a);
+return p * mat2(ca, -sa, sa, ca);
+}  
+
+vec3 bowling()
+{
+	float t = time*.1;
+	vec2 position = ( gl_FragCoord.xy / resolution.xy )*4.;
+	position.y = 8.0-position.y; // delete this line to get bowling balls
+	vec2 _p = position;
+	position.x = sin(position.y*3.14);
+	position -= 8.;
+	position+=sin(time+_p)*0.4;
+	position = rot(position, sin(t+_p.x*7.));
+	float v2 = cos(time*1.2+position.y+_p.y)*1.1;
+	vec3 color = vec3(0.,v2,0.);
+	return  mix(color, vec3(2.0,2.0,.5), smoothstep(-0.1, .1, position.x))*0.4;
+}
+
+void main( void )
+{
+	vec2 uv = (gl_FragCoord.xy*2.-resolution.xy)/min(resolution.x,resolution.y)*3.0; 
+    if (Param2 == 3. || Param2 == 4.) {
+		if (uv.x > 0.) {
+		    uv.x = 2.*uv.x - 3.;
+			}
+			else
+			{
+			    uv.x = -3. - uv.x*2. ;
+			}
+		}
+		if (Param2 == 2. || Param2 == 4.) {
+		    if (uv.y > .0) {
+			uv.y = 2. * uv.y - 3.;
+		    }
+		    else
+		    {
+			uv.y = -3. - uv.y*2. ;
+		    }
+	}
+    uv*=1.8;
+    uv = rot(uv,0.3+sin(time+uv.y*1.2+uv.x*0.2)*0.25);
+	float i0=1.8;
+	float i1=0.5 + cos(time/400.)/16.;
+	float i2=.5 + sin(time/4.)/8.;
+	vec2 i4=vec2(0.0,0.0);
+
+	vec2 rv;
+	rv =  vec2(cos(uv.y*i0-i4.y+time/i1),sin(uv.x*i0+i4.x+time/i1))/i2;
+	rv += vec2(rv.y,rv.x)*2.0;
+	uv.xy += rv*0.08 ;
+
+	float r=sin(uv.x-time)*0.5+0.5;
+	float b=sin(uv.y+time)*0.5+0.5;
+	float g=sin((sqrt(uv.x*uv.x+uv.y*uv.y)-time))*0.5+0.5;
+	
+	vec3 col=vec3(r,g,b);
+		bool dobackground = false;
+	float rr = 3.8  ;
+	float increment = .25;
+	increment *= Param1*2.;
+	if (length(uv) > rr)
+		dobackground = true;
+	if (Param1 < 2.) {
+	  if (length(uv) > rr) {
+		col /= 1.5;
+	  }
+	}
+	else if (length(uv) < rr)
+		col /= 1.5;
+	col  -= smoothstep( rr, rr+increment, length( uv) );
+	if (length(uv) > rr+increment)
+		col = vec3(0.);
+	col = clamp(col, 0.,1.);
+	if (dobackground) {
+		if (Param4 == 1.)
+			col+= col3()/2.;
+		else if (Param4 == 2.)
+			col+= bowling()/1.5;
+		else if (Param4 == 3.)
+			col+= bokeh()/2.;
+		else if (Param4 == 4.)
+			col+= matrix()/2.;
+		else if (Param4 == 5.)
+			col+= trippy()/1.5;		
+	}
+	vec3 final_col = col;
+	if (Param3 == 1.)
+		final_col = col;
+	    else if (Param3 == 2.)
+		final_col = col.ggb*1.5;
+	    else if (Param3 == 3.)
+		final_col = col.grr;
+	    else if (Param3 == 4.) {
+		col.r += col.g;
+			col.b = col.g;
+			col.g = 0.;
+		final_col = col;
+		}
+	    else if (Param3 == 5.) {
+		col.g = col.r;
+			col.r = col.b;
+			col.b = 0.;
+		final_col = col;
+		}
+	    else if (Param3 == 6.) {
+		col.b += col.r;
+			col.r = col.g;
+			col.g = 0.;
+		final_col = col/1.5;
+	    }
+	    else if (Param3 == 7.)
+	       final_col = vec3((col.x + col.y + col.z)/2.);
+	gl_FragColor = vec4(final_col,1.0);
+}
+</script>
+<script id="shader-2-fs" type="f">
+    precision highp float;
+//    varying vec2 vTextureCoord;
+//    uniform sampler2D uSampler;
+    uniform vec2 resolution;
+    uniform vec2 mouse;
+    uniform int index;
+    uniform float time;
+    uniform float Param1;
+    uniform float Param2;
+    uniform float Param3;
+    uniform float Param4;
+
+const float fRadius = 0.008;
+const float ySpeed = 1.25;
+const float bubblePopHeight = 1.0;
+const float bubbleSpreadDist = 2.0;
+vec3 bokeh()
+{
+	vec2 uv = -1. + 2.0*gl_FragCoord.xy / resolution.xy;
+    uv.x *=  resolution.x / resolution.y;
+    
+    vec3 color = vec3(0.0);
+
+        // bubbles
+    for( int i=0; i<20; i++ )
+    {
+            // bubble seeds
+        float pha = tan(float(i)*6.+1.0)*0.5 + 0.5;
+        float siz = pow( cos(float(i)*2.4+4.0) * 0.5 + ySpeed, 4.0 );
+        float pox = cos(float(i)*2.55+3.1) * resolution.x / resolution.y;
+        
+            // buble size, position and color
+        float rad = fRadius + sin(float(i))*0.12+0.29;
+        vec2  pos = vec2( pox+sin(time/50.+pha+siz), -abs(bubblePopHeight)-rad + (bubbleSpreadDist+2.0*rad)
+                         *mod(pha+0.1*(time/5.)*(0.2+0.8*siz),1.0)) * vec2(1.0, 1.0);
+        float dis = length( uv - pos );
+        vec3  col = mix( vec3(0.2, 0.5, 0.1), vec3(0.2,0.3,0.6), 0.2+0.2*sin(float(i)*sin(time*pox*0.03)+1.9));
+        
+            // render
+        color += col.xyz *(1.- smoothstep( rad*(0.65+0.20*sin(pox*time)), rad, dis )) * (1.0 - cos(pox*time));
+    }
+	return color;
+}
+
+vec3 trippy()
+{
+	vec2 uv = (gl_FragCoord.xy / resolution.xy);
+	
+	vec2 r  = resolution.xy/32.;
+	float t = time/4.;
+	
+	float c = fract( sin(uv.x * r.x*0.8) *
+			 sin(uv.y * r.y*0.08 ) + t ); 
+	
+	uv.x += (uv.x+uv.y) +  c;
+	 
+	
+	
+	return vec3(c, c*mod(t+uv.x,1.5), 0.5 )/4.;
+}
+
+vec3 col3 ()
+{
+	vec2 u = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y) ;
+	float speed = 1.1;
+	vec2 o = vec2(sin(length(u) - time * speed), cos(length(u) - time * speed));
+	vec2 ux = u + vec2(1.5, 4.5);
+	vec2 d = vec2(sin(length(ux) - time * speed), cos(length(ux) - time * speed));
+	vec2 uy = u + vec2(-1.5, -0.5);
+	vec2 l = vec2(sin(length(uy) - time * speed), cos(length(uy) - time * speed));
+	
+	vec2 c =  o * d * l + vec2(0.4, 0.8);
+	float cx = o.y * d.y + l.y + 0.4;
+
+	return vec3( c, 1.0 )/3.;
+}
+
+vec3 matrix()
+{
+	vec2 uv = ( gl_FragCoord.xy / resolution.xy );
+	//uv.x *= resolution.x/resolution.y;
+	
+	vec3 finalColor = vec3( 0.0, 0.0, 0.0 );
+	
+	float g = -mod( gl_FragCoord.y + time, sin( gl_FragCoord.x/4. ) + 0.004 );
+	g = g + clamp(uv.y, -1.0, 0.0);	
+	
+	finalColor = vec3( 0.0, g, 0.0 );
+	
+	return finalColor;
+
+}
+
+vec2 rot(vec2 p, float a)
+{
+float sa = sin(a), ca = cos(a);
+return p * mat2(ca, -sa, sa, ca);
+}  
+
+vec3 bowling()
+{
+	float t = time*.1;
+	vec2 position = ( gl_FragCoord.xy / resolution.xy )*4.;
+	position.y = 8.0-position.y; // delete this line to get bowling balls
+	vec2 _p = position;
+	position.x = sin(position.y*3.14);
+	position -= 8.;
+	position+=sin(time+_p)*0.4;
+	position = rot(position, sin(t+_p.x*7.));
+	float v2 = cos(time*1.2+position.y+_p.y)*1.1;
+	vec3 color = vec3(0.,v2,0.);
+	return  mix(color, vec3(2.0,2.0,.5), smoothstep(-0.1, .1, position.x))*0.4;
+}
+
+void main( void )
+{
+    vec2 uv =  6.*( gl_FragCoord.xy / resolution.xy )-3.0;
+    if (Param2 == 3. || Param2 == 4.) {
+		if (uv.x > 0.) {
+		    uv.x = 2.*uv.x - 3.;
+			}
+			else
+			{
+			    uv.x = -3. - uv.x*2. ;
+			}
+		}
+		if (Param2 == 2. || Param2 == 4.) {
+		    if (uv.y > .0) {
+			uv.y = 2. * uv.y - 3.;
+		    }
+		    else
+		    {
+			uv.y = -3. - uv.y*2. ;
+		    }
+	}
+	uv.x *= 1.2*resolution.x/resolution.y;   
+    uv = rot(uv,0.5+sin(time+uv.y*1.2+uv.x*0.2)*0.5);
+	float p = length(uv);
+
+	uv =p*floor(uv*48.0)/48.0;
+	float i0=1.5 + sin(time/4.)/1.7 ;
+	float i1=0.5 + cos(time/800.)/16.;
+	float i2=2.8+ sin(time/4.)/4.;
+	vec2 i4=vec2(2.0,7.0);
+	
+	for(int s=0;s<1;s++)
+	{
+		vec2 r = vec2(0.0,0.0);
+		r=vec2(cos(uv.y*i0-i4.y+time/i1),sin(uv.x*i0+i4.x+time/i1))/i2;
+		r+=vec2(-r.y,r.x)*0.5;
+		uv.xy+=r*p;
+        
+		i0*=1.93;
+		i1*=0.45;
+		i2*=1.8;
+		i4+=r.xy*1.0+0.1*time*i1;
+		
+		if(p>2.0) break; 
+	}
+	float r=sin(uv.x-time)*0.5+.4;
+	float b=sin(uv.y+time)*0.5+0.7;
+	float g=sin((sqrt(uv.x*uv.x+uv.y*uv.y)+time))*0.5+0.5;
+	
+	vec3 col=vec3(r,g,b);
+	bool dobackground = false;
+	float rr = 3.8  ;
+	float increment = .25;
+	increment *= Param1*2.;
+	if (length(uv) > rr+increment)
+		dobackground = true;
+	if (Param1 < 2.) {
+	  if (length(uv) > rr) {
+		col /= 1.5;
+	  }
+	}
+	else if (length(uv) < rr)
+		col /= 1.5;
+	col  -= smoothstep( rr, rr+increment, length( uv) );
+    if (length(uv) > rr+increment)
+		col = vec3(0.);
+	col = clamp(col, 0.,1.);
+	if (dobackground) {
+		if (Param4 == 1.)
+			col= col3()/2.;
+		else if (Param4 == 2.)
+			col= bowling()/1.5;
+		else if (Param4 == 3.)
+			col= bokeh()/2.;
+		else if (Param4 == 4.)
+			col= matrix()/2.;
+		else if (Param4 == 5.)
+			col= trippy()/1.5;		
+	}
+	vec3 final_col = col;
+	if (Param3 == 1.)
+		final_col = col;
+	    else if (Param3 == 2.)
+		final_col = col.ggb*1.5;
+	    else if (Param3 == 3.)
+		final_col = col.grr;
+	    else if (Param3 == 4.) {
+		col.r += col.g;
+			col.b = col.g;
+			col.g = 0.;
+		final_col = col;
+		}
+	    else if (Param3 == 5.) {
+		col.g = col.r;
+			col.r = col.b;
+			col.b = 0.;
+		final_col = col;
+		}
+	    else if (Param3 == 6.) {
+		col.b += col.r;
+			col.r = col.g;
+			col.g = 0.;
+		final_col = col/1.5;
+	    }
+	    else if (Param3 == 7.)
+	       final_col = vec3((col.x + col.y + col.z)/2.);
+	gl_FragColor = vec4(final_col,1.0);
+}
+
+</script>
+<script id="shader-3-fs" type="f">
+    precision highp float;
+//    varying vec2 vTextureCoord;
+//    uniform sampler2D uSampler;
+    uniform vec2 resolution;
+    uniform vec2 mouse;
+    uniform int index;
+    uniform float time;
+    uniform float Param1;
+    uniform float Param2;
+    uniform float Param3;
+    uniform float Param4;
+    
+const float fRadius = 0.008;
+const float ySpeed = 1.25;
+const float bubblePopHeight = 1.0;
+const float bubbleSpreadDist = 2.0;
+vec3 bokeh()
+{
+	vec2 uv = -1. + 2.0*gl_FragCoord.xy / resolution.xy;
+    uv.x *=  resolution.x / resolution.y;
+    
+    vec3 color = vec3(0.0);
+
+        // bubbles
+    for( int i=0; i<20; i++ )
+    {
+            // bubble seeds
+        float pha = tan(float(i)*6.+1.0)*0.5 + 0.5;
+        float siz = pow( cos(float(i)*2.4+4.0) * 0.5 + ySpeed, 4.0 );
+        float pox = cos(float(i)*2.55+3.1) * resolution.x / resolution.y;
+        
+            // buble size, position and color
+        float rad = fRadius + sin(float(i))*0.12+0.29;
+        vec2  pos = vec2( pox+sin(time/50.+pha+siz), -abs(bubblePopHeight)-rad + (bubbleSpreadDist+2.0*rad)
+                         *mod(pha+0.1*(time/5.)*(0.2+0.8*siz),1.0)) * vec2(1.0, 1.0);
+        float dis = length( uv - pos );
+        vec3  col = mix( vec3(0.2, 0.5, 0.1), vec3(0.2,0.3,0.6), 0.2+0.2*sin(float(i)*sin(time*pox*0.03)+1.9));
+        
+            // render
+        color += col.xyz *(1.- smoothstep( rad*(0.65+0.20*sin(pox*time)), rad, dis )) * (1.0 - cos(pox*time));
+    }
+	return color;
+}
+
+vec3 trippy()
+{
+	vec2 uv = (gl_FragCoord.xy / resolution.xy);
+	
+	vec2 r  = resolution.xy/32.;
+	float t = time/4.;
+	
+	float c = fract( sin(uv.x * r.x*0.8) *
+			 sin(uv.y * r.y*0.08 ) + t ); 
+	
+	uv.x += (uv.x+uv.y) +  c;
+	 
+	
+	
+	return vec3(c, c*mod(t+uv.x,1.5), 0.5 )/4.;
+}
+
+vec3 col3 ()
+{
+	vec2 u = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y) ;
+	float speed = 1.1;
+	vec2 o = vec2(sin(length(u) - time * speed), cos(length(u) - time * speed));
+	vec2 ux = u + vec2(1.5, 4.5);
+	vec2 d = vec2(sin(length(ux) - time * speed), cos(length(ux) - time * speed));
+	vec2 uy = u + vec2(-1.5, -0.5);
+	vec2 l = vec2(sin(length(uy) - time * speed), cos(length(uy) - time * speed));
+	
+	vec2 c =  o * d * l + vec2(0.4, 0.8);
+	float cx = o.y * d.y + l.y + 0.4;
+
+	return vec3( c, 1.0 )/3.;
+}
+
+vec3 matrix()
+{
+	vec2 uv = ( gl_FragCoord.xy / resolution.xy );
+	//uv.x *= resolution.x/resolution.y;
+	
+	vec3 finalColor = vec3( 0.0, 0.0, 0.0 );
+	
+	float g = -mod( gl_FragCoord.y + time, sin( gl_FragCoord.x/4. ) + 0.004 );
+	g = g + clamp(uv.y, -1.0, 0.0);	
+	
+	finalColor = vec3( 0.0, g, 0.0 );
+	
+	return finalColor;
+
+}
+
+vec2 rot(vec2 p, float a)
+{
+float sa = sin(a), ca = cos(a);
+return p * mat2(ca, -sa, sa, ca);
+}  
+
+vec3 bowling()
+{
+	float t = time*.1;
+	vec2 position = ( gl_FragCoord.xy / resolution.xy )*4.;
+	position.y = 8.0-position.y; // delete this line to get bowling balls
+	vec2 _p = position;
+	position.x = sin(position.y*3.14);
+	position -= 8.;
+	position+=sin(time+_p)*0.4;
+	position = rot(position, sin(t+_p.x*7.));
+	float v2 = cos(time*1.2+position.y+_p.y)*1.1;
+	vec3 color = vec3(0.,v2,0.);
+	return  mix(color, vec3(2.0,2.0,.5), smoothstep(-0.1, .1, position.x))*0.4;
+}
+
+
+void main( void )
+{
+    vec2 uv =  6.*( gl_FragCoord.xy / resolution.xy )-3.0;
+    if (Param2 == 3. || Param2 == 4.) {
+		if (uv.x > 0.) {
+		    uv.x = 2.*uv.x - 3.;
+			}
+			else
+			{
+			    uv.x = -3. - uv.x*2. ;
+			}
+		}
+		if (Param2 == 2. || Param2 == 4.) {
+		    if (uv.y > .0) {
+			uv.y = 2. * uv.y - 3.;
+		    }
+		    else
+		    {
+			uv.y = -3. - uv.y*2. ;
+		    }
+	}
+	uv.x *= 1.2*resolution.x/resolution.y;
+    uv = rot(uv,0.25+sin(time+uv.y*1.2+uv.x*0.2)*0.5);
+	float p = length(uv);
+	uv =p*floor(uv*48.0)/48.0;
+	float i0=1.25 + sin(time/4.)/4. ;
+	float i1=2.95;
+	float i2=1.4;
+	vec2 i4=vec2(1.0,1.0);
+	
+	vec2 r = vec2(0.0,0.0);
+	r=vec2(cos(uv.y*i0-i4.y+time/i1),sin(uv.x*i0+i4.x+time/i1))/i2;
+	r+=vec2(-r.y,r.x)*0.5;
+	uv.xy+=r*p;
+
+	i0*=1.93;
+	i1*=0.45;
+	i2*=1.8;
+	i4+=r.xy*1.0+0.1*time*i1;
+
+	float re=sin(uv.x-time)*0.5+.6;
+	float b=sin(uv.y+time)*0.5+0.7;
+	float g=sin((sqrt(uv.x*uv.x+uv.y*uv.y)-time))*0.5+0.5;
+
+	vec3 col=vec3(re,g,b);
+	bool dobackground = false;
+	float rr = 3.8  ;
+	float increment = .25;
+	increment *= Param1*2.;
+	if (length(uv) > rr)
+		dobackground = true;
+	if (Param1 < 2.) {
+	  if (length(uv) > rr) {
+		col /= 1.5;
+	  }
+	}
+	else if (length(uv) < rr)
+		col /= 1.5;
+	col  -= smoothstep( rr, rr+increment, length( uv) );
+	if (length(uv) > rr+increment)
+		col = vec3(0.);
+	col = clamp(col, 0.,1.);
+	if (dobackground) {
+		if (Param4 == 1.)
+			col+= col3()/2.;
+		else if (Param4 == 2.)
+			col+= bowling()/1.5;
+		else if (Param4 == 3.)
+			col+= bokeh()/2.;
+		else if (Param4 == 4.)
+			col+= matrix()/2.;
+		else if (Param4 == 5.)
+			col+= trippy()/1.5;		
+	}
+	vec3 final_col = col;
+	if (Param3 == 1.)
+		final_col = col;
+	    else if (Param3 == 2.)
+		final_col = col.ggb*1.5;
+	    else if (Param3 == 3.)
+		final_col = col.grr;
+	    else if (Param3 == 4.) {
+		col.r += col.g;
+			col.b = col.g;
+			col.g = 0.;
+		final_col = col;
+		}
+	    else if (Param3 == 5.) {
+		col.g = col.r;
+			col.r = col.b;
+			col.b = 0.;
+		final_col = col;
+		}
+	    else if (Param3 == 6.) {
+		col.b += col.r;
+			col.r = col.g;
+			col.g = 0.;
+		final_col = col/1.5;
+	    }
+	    else if (Param3 == 7.)
+	       final_col = vec3((col.x + col.y + col.z)/2.);
+	gl_FragColor = vec4(final_col,1.0);
+}
+</script>
+<script id="shader-4-fs" type="f">
+    precision highp float;
+//    varying vec2 vTextureCoord;
+//    uniform sampler2D uSampler;
+    uniform vec2 resolution;
+    uniform vec2 mouse;
+    uniform int index;
+    uniform float time;
+    uniform float Param1;
+    uniform float Param2;
+    uniform float Param3;    
+    uniform float Param4;
+
+const float fRadius = 0.008;
+const float ySpeed = 1.25;
+const float bubblePopHeight = 1.0;
+const float bubbleSpreadDist = 2.0;
+vec3 bokeh()
+{
+	vec2 uv = -1. + 2.0*gl_FragCoord.xy / resolution.xy;
+    uv.x *=  resolution.x / resolution.y;
+    
+    vec3 color = vec3(0.0);
+
+        // bubbles
+    for( int i=0; i<20; i++ )
+    {
+            // bubble seeds
+        float pha = tan(float(i)*6.+1.0)*0.5 + 0.5;
+        float siz = pow( cos(float(i)*2.4+4.0) * 0.5 + ySpeed, 4.0 );
+        float pox = cos(float(i)*2.55+3.1) * resolution.x / resolution.y;
+        
+            // buble size, position and color
+        float rad = fRadius + sin(float(i))*0.12+0.29;
+        vec2  pos = vec2( pox+sin(time/50.+pha+siz), -abs(bubblePopHeight)-rad + (bubbleSpreadDist+2.0*rad)
+                         *mod(pha+0.1*(time/5.)*(0.2+0.8*siz),1.0)) * vec2(1.0, 1.0);
+        float dis = length( uv - pos );
+        vec3  col = mix( vec3(0.2, 0.5, 0.1), vec3(0.2,0.3,0.6), 0.2+0.2*sin(float(i)*sin(time*pox*0.03)+1.9));
+        
+            // render
+        color += col.xyz *(1.- smoothstep( rad*(0.65+0.20*sin(pox*time)), rad, dis )) * (1.0 - cos(pox*time));
+    }
+	return color;
+}
+
+vec3 trippy()
+{
+	vec2 uv = (gl_FragCoord.xy / resolution.xy);
+	
+	vec2 r  = resolution.xy/32.;
+	float t = time/4.;
+	
+	float c = fract( sin(uv.x * r.x*0.8) *
+			 sin(uv.y * r.y*0.08 ) + t ); 
+	
+	uv.x += (uv.x+uv.y) +  c;
+	 
+	
+	
+	return vec3(c, c*mod(t+uv.x,1.5), 0.5 )/4.;
+}
+
+vec3 col3 ()
+{
+	vec2 u = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y) ;
+	float speed = 1.1;
+	vec2 o = vec2(sin(length(u) - time * speed), cos(length(u) - time * speed));
+	vec2 ux = u + vec2(1.5, 4.5);
+	vec2 d = vec2(sin(length(ux) - time * speed), cos(length(ux) - time * speed));
+	vec2 uy = u + vec2(-1.5, -0.5);
+	vec2 l = vec2(sin(length(uy) - time * speed), cos(length(uy) - time * speed));
+	
+	vec2 c =  o * d * l + vec2(0.4, 0.8);
+	float cx = o.y * d.y + l.y + 0.4;
+
+	return vec3( c, 1.0 )/3.;
+}
+
+vec3 matrix()
+{
+	vec2 uv = ( gl_FragCoord.xy / resolution.xy );
+	//uv.x *= resolution.x/resolution.y;
+	
+	vec3 finalColor = vec3( 0.0, 0.0, 0.0 );
+	
+	float g = -mod( gl_FragCoord.y + time, sin( gl_FragCoord.x/4. ) + 0.004 );
+	g = g + clamp(uv.y, -1.0, 0.0);	
+	
+	finalColor = vec3( 0.0, g, 0.0 );
+	
+	return finalColor;
+
+}
+
+vec2 rot(vec2 p, float a)
+{
+float sa = sin(a), ca = cos(a);
+return p * mat2(ca, -sa, sa, ca);
+}  
+
+vec3 bowling()
+{
+	float t = time*.1;
+	vec2 position = ( gl_FragCoord.xy / resolution.xy )*4.;
+	position.y = 8.0-position.y; // delete this line to get bowling balls
+	vec2 _p = position;
+	position.x = sin(position.y*3.14);
+	position -= 8.;
+	position+=sin(time+_p)*0.4;
+	position = rot(position, sin(t+_p.x*7.));
+	float v2 = cos(time*1.2+position.y+_p.y)*1.1;
+	vec3 color = vec3(0.,v2,0.);
+	return  mix(color, vec3(2.0,2.0,.5), smoothstep(-0.1, .1, position.x))*0.4;
+}
+
+void main( void )
+{
+	vec2 uv = (gl_FragCoord.xy*2.-resolution.xy)/min(resolution.x,resolution.y)*4.0; 
+    if (Param2 == 3. || Param2 == 4.) {
+		if (uv.x > 0.) {
+		    uv.x = 2.*uv.x - 3.;
+			}
+			else
+			{
+			    uv.x = -3. - uv.x*2. ;
+			}
+		}
+		if (Param2 == 2. || Param2 == 4.) {
+		    if (uv.y > .0) {
+			uv.y = 2. * uv.y - 3.;
+		    }
+		    else
+		    {
+			uv.y = -3. - uv.y*2. ;
+		    }
+	}
+    uv*=1.5;
+	uv = rot(uv,0.+sin(time+uv.y*1.2+uv.x*0.2)*0.25);
+	float i0=2.8;
+	float i1=0.95;
+	float i2=1.5;
+	vec2 i4=vec2(0.0,0.0);
+
+	vec2 rv;
+	rv =  vec2(cos(uv.y*i0-i4.y+time/i1),sin(uv.x*i0+i4.x+time/i1))/i2;
+	rv += vec2(rv.y,rv.x)*2.0;
+	uv.xy += rv*0.08 ;
+
+	float r=sin(uv.x-time)*0.5+0.5;
+	float b=sin(uv.y+time)*0.5+0.5;
+	float g=sin((sqrt(uv.x*uv.x+uv.y*uv.y)-time))*0.5+0.5;
+	
+	vec3 col=vec3(r,g,b);
+		bool dobackground = false;
+	float rr = 3.8  ;
+	float increment = .25;
+	increment *= Param1*2.;
+	if (length(uv) > rr)
+		dobackground = true;
+	if (Param1 < 2.) {
+	  if (length(uv) > rr) {
+		col /= 1.5;
+	  }
+	}
+	else if (length(uv) < rr)
+		col /= 1.5;
+	col  -= smoothstep( rr, rr+increment, length( uv) );
+	if (length(uv) > rr+increment)
+		col = vec3(0.);
+	col = clamp(col, 0.,1.);
+	if (dobackground) {
+		if (Param4 == 1.)
+			col+= col3()/2.;
+		else if (Param4 == 2.)
+			col+= bowling()/1.5;
+		else if (Param4 == 3.)
+			col+= bokeh()/2.;
+		else if (Param4 == 4.)
+			col+= matrix()/2.;
+		else if (Param4 == 5.)
+			col+= trippy()/1.5;		
+	}
+	vec3 final_col = col;
+	if (Param3 == 1.)
+		final_col = col;
+	    else if (Param3 == 2.)
+		final_col = col.ggb*1.5;
+	    else if (Param3 == 3.)
+		final_col = col.grr;
+	    else if (Param3 == 4.) {
+		col.r += col.g;
+			col.b = col.g;
+			col.g = 0.;
+		final_col = col;
+		}
+	    else if (Param3 == 5.) {
+		col.g = col.r;
+			col.r = col.b;
+			col.b = 0.;
+		final_col = col;
+		}
+	    else if (Param3 == 6.) {
+		col.b += col.r;
+			col.r = col.g;
+			col.g = 0.;
+		final_col = col/1.5;
+	    }
+	    else if (Param3 == 7.)
+	       final_col = vec3((col.x + col.y + col.z)/2.);
+	gl_FragColor = vec4(final_col,1.0);
+}
+</script>
+    
+<script id="shader-vs" type="v">
+attribute vec3 aVertexPosition;attribute vec2 aTextureCoord;uniform mat4 uMVMatrix;uniform mat4 uPMatrix;void main(void){gl_Position=uPMatrix*uMVMatrix*vec4(aVertexPosition,1.);}
+</script>
+
+</head>
+<body>
+<div id="container">
+  <div id="main">
+    <canvas id="webgl-canvas"  style="border: none;" width="1500" height="1000"></canvas>
+    <splash class = "btn" enabled></splash>
+    <button class="btn" enabled></button>
+    <button1 class="btn" enabled></button1>
+    <button2 class="btn" enabled></button2>
+    <button3 class="btn" enabled></button3>
+    <buttonl class="btn" enabled></buttonl>
+    <buttonr class="btn" enabled></buttonr>
+    <audio id="audio" autobuffer="autobuffer" preload="auto">
+    <source src="plazma.mp3" type="audio/mp3" />
+    <source src="plazma.ogg" type="audio/ogg" />
+    <source src="plazma.aac" type="audio/aac" />
+    <audio id="audio1" autobuffer="autobuffer" preload="auto">
+    <source src="plazma1.mp3" type="audio/mp3" />
+    <source src="plazma1.ogg" type="audio/ogg" />
+    <source src="plazma1.aac" type="audio/aac" />
+    <audio id="audio2" autobuffer="autobuffer" preload="auto">
+     <source src="plazma2.mp3" type="audio/mp3" />
+    <source src="plazma2.ogg" type="audio/ogg" />
+    <source src="plazma2.aac" type="audio/aac" />
+</audio>
+    </div>
+  </div>
+</body>
+</html>
